@@ -6,29 +6,24 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
-import ru.kata.spring.boot_security.demo.service.UserService;
+import ru.kata.spring.boot_security.demo.service.UserServiceImp;
 
 import java.util.Arrays;
 
 @Component
 public class UserUpload implements CommandLineRunner {
 
-    private final UserService userService;
+    private final UserServiceImp userServiceImp;
     @Autowired
-    public UserUpload(UserService userService) {
-        this.userService = userService;
+    public UserUpload(UserServiceImp userServiceImp) {
+        this.userServiceImp = userServiceImp;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        Role ROLE_ADMIN = new Role("ROLE_ADMIN");
-        Role ROLE_USER = new Role("ROLE_USER");
-        userService.saveRoles(ROLE_ADMIN);
-        userService.saveRoles(ROLE_USER);
-        userService.saveUser(new User("Andrew", "Kim", (byte)24, "admin@mail.ru", "qwe123",
-                Arrays.asList(ROLE_ADMIN, ROLE_USER)));
-        userService.saveUser(new User("Veronika", "Kim", (byte)25, "user@mail.ru", "qwe123",
-                Arrays.asList(ROLE_USER)));
+        userServiceImp.addUser(new User("Andrew", "Kim", (byte)24, "qwe123", "admin@mail.ru", Role.ROLE_ADMIN, Role.ROLE_USER));
+        userServiceImp.addUser(new User("Victor", "Ten", (byte)24, "qwe123", "user@mail.ru", Role.ROLE_USER));
+//
     }
 }

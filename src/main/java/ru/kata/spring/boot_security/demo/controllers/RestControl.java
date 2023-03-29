@@ -1,59 +1,79 @@
 package ru.kata.spring.boot_security.demo.controllers;
 
+import org.apache.tomcat.util.json.JSONParser;
+import org.apache.tomcat.util.json.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
+import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
-import ru.kata.spring.boot_security.demo.service.UserService;
+import ru.kata.spring.boot_security.demo.service.UserServiceImp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/admin")
 public class RestControl {
 
-    private final UserService userService;
+    private final UserServiceImp userServiceImp;
 
     @Autowired
-    public RestControl(UserService userService) {
-        this.userService = userService;
+    public RestControl(UserServiceImp userServiceImp) {
+        this.userServiceImp = userServiceImp;
     }
-    @GetMapping("/users")
-    public ResponseEntity<List<User>> getListUser() {
-        return new ResponseEntity<>(userService.listUsers(), HttpStatus.OK);
-    }
-
-    @GetMapping("/users/{id}")
-    public ResponseEntity<Optional<User>> getUser(@PathVariable("id") Long id) {
-        return new ResponseEntity<>(userService.getUser(id), HttpStatus.OK);
+    @GetMapping()
+    public ModelAndView usersManage(Model model, Authentication authentication) {
+        Role[] rolesArr = Role.values();
+        model.addAttribute("roles_list", rolesArr);
+        model.addAttribute("principal", authentication.getPrincipal());
+        return new ModelAndView("admin_page");
     }
 
-    @PostMapping("/users")
-    public ResponseEntity<User> addUser(@RequestBody User user) throws Exception {
-
-        userService.saveUser(user);
-        return new ResponseEntity<>(HttpStatus.OK);
+    @GetMapping("/getusers")
+    public List<User> getUser() {
+        return userServiceImp.getUsersList();
     }
 
-    @PutMapping("/users")
-    public ResponseEntity<User> updateUser(@RequestBody User user) {
-        userService.updateUser(user);
-        return new ResponseEntity<>(HttpStatus.OK);
+    @PostMapping()
+    public ResponseEntity addNewUser(@RequestBody User user) {
+        user.setEnabled(true);
+        userServiceImp.addUser(user);
+        ResponseEntity<User> response = new ResponseEntity<>(userServiceImp.findUserByUsername(user.getEmail()), HttpStatus.CREATED);
+        return response;
     }
 
-    @DeleteMapping("/users/{id}")
-    public ResponseEntity<User> deleteUser(@PathVariable("id") Long id) {
-        userService.deleteUser(id);
-        return new ResponseEntity<>(HttpStatus.OK);
+    @PatchMapping ()
+    public User editUser(@RequestBody User editUser) {
+        if (editUser.getPassword().equals("")) {
+            User user = userServiceImp.findUserById(editUser.getId());
+            editUser.setPassword(user.getPassword());
+        }
+        userServiceImp.updateUser(editUser);
+        return userServiceImp.findUserById(editUser.getId());
     }
 
-    @GetMapping("/users/user")
-    public ResponseEntity<User> getUser(@AuthenticationPrincipal User user) {
-        return new ResponseEntity<>(user, HttpStatus.OK);
+    @DeleteMapping()
+    public ResponseEntity deleteUser(@RequestBody String id) throws ParseException {
+        LinkedHashMap<String, Object> jsonObject = new JSONParser(id).parseObject();
+        String strId = (String) jsonObject.get("id");
+        try {
+            userServiceImp.deleteUser(Long.parseLong(strId));
+            return ResponseEntity.noContent().build();
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
+
+//    @GetMapping("/users")
+//    public ResponseEntity<User> getUser(@AuthenticationPrincipal User user) {
+//        return new ResponseEntity<>(user, HttpStatus.OK);
+//    }
 
 
 

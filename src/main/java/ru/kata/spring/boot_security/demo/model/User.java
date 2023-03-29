@@ -1,91 +1,69 @@
 package ru.kata.spring.boot_security.demo.model;
 
-
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
+@Setter
+@Getter
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
+
+
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
-    private String name;
+    private Long id;
+    private String firstName;
     private String lastName;
     private byte age;
-    private String email;
     private String password;
-    @ManyToMany(fetch = FetchType.LAZY)
-    private List<Role> roles;
 
-    public User() {
-    }
+    @Column(unique = true)
+    private String email;
+    private boolean isEnabled;
 
-    public User(String name, String lastName, byte age, String email, String password, List<Role> roles) {
-        this.name = name;
+
+    @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    private Set<Role> authorities = new HashSet<>();
+
+
+    public User(String firstName, String lastName, byte age, String password, String email, Role... authorities) {
+        this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
-        this.email = email;
         this.password = password;
-        this.roles = roles;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public byte getAge() {
-        return age;
-    }
-
-    public void setAge(byte age) {
-        this.age = age;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
         this.email = email;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles;
-    }
-
-    public String getPassword() {
-        return password;
+        this.isEnabled = true;
+        this.authorities.addAll(Arrays.asList(authorities));
     }
 
     @Override
     public String getUsername() {
         return email;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return this.authorities;
+    }
+
+    @Override
+    public String getPassword() {
+
+        return password;
     }
 
     @Override
@@ -105,40 +83,20 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return isEnabled;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<Role> roles) {
-        this.roles = roles;
-    }
-
-    public String getShowRoles() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(roles.get(0).getUnRole());
-        if (roles.size() > 1) {
-            sb.append(" ")
-                    .append(roles.get(1).getUnRole());
-        }
-        return sb.toString();
-    }
     @Override
     public String toString() {
         return "User{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", age=" + age +
-                ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
-                ", roles=" + roles +
+                ", email='" + email + '\'' +
+                ", isEnabled=" + isEnabled +
+                ", authorities=" + authorities +
                 '}';
     }
 }
